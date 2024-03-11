@@ -2,9 +2,9 @@
 # Some code from taken from the Automatic1111 plugin:
 # https://github.com/thygate/stable-diffusion-webui-depthmap-script
 
+from invokeai.app.invocations.baseinvocation import BaseInvocation, InputField, InvocationContext, invocation
 from invokeai.app.invocations.primitives import ColorField, ImageField, ImageOutput
 from invokeai.app.services.image_records.image_records_common import ImageCategory, ResourceOrigin
-from .baseinvocation import BaseInvocation, InputField, InvocationContext, invocation
 
 from scipy import ndimage
 from PIL import Image
