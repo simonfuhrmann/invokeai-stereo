@@ -198,7 +198,8 @@ class MakeStereoPair(BaseInvocation):
   def invoke(self, context: InvocationContext) -> ImageOutput:
     left = context.services.images.get_pil_image(self.left.image_name)
     right = context.services.images.get_pil_image(self.right.image_name)
-    pair = self.makePair(left, right, self.borderPx, self.borderColor)
+    borderPx = max(0, self.borderPx)
+    pair = self.makePair(left, right, borderPx, self.borderColor)
 
     pair_dto = context.services.images.create(
       image = pair,
