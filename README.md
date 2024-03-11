@@ -2,18 +2,21 @@
 
 This repository contains custom nodes for InvokeAI to create cross-view or
 parallel-view stereograms. Stereograms are 2D images that, when viewed properly,
-reveal a 3D scene.
+reveal a 3D scene. Check out
+[r/crossview](https://www.reddit.com/r/CrossView/wiki/index/) for tutorials.
 
 Following is an example stereo image with an embedded workflow. To load the
-workflow, drag and drop it into your InvokeAI (Ctrl-V doesn't seem to work).
-Then right-click the image and select "Load Workflow".
+workflow, drag and drop it into your InvokeAI (copy and Ctrl-V seems to drop
+metdata, including the workflow). Then right-click the image and select "Load
+Workflow".
 
 ![Example stereo image](docs/example_stereo_01.png)
 
 ## Installation
 
-Clone this repository into your `<invokeai>/nodes/`. Then restart your InvokeAI
-server. For example:
+Clone this repository into your `<invokeai>/nodes/` directory. Then restart
+InvokeAI. This will make new nodes available in the workflow editor (see below
+for details). For example:
 
 ```bash
 cd $INVOKE_ROOT/nodes
@@ -22,6 +25,10 @@ git clone https://github.com/simonfuhrmann/invokeai-stereo.git
 
 Alternatively, create a directory under your `<invokeai>/nodes/` directory, and
 copy `stereogram.py` and `__init__.py` into this directory.
+
+Alternatively (NOT recommended), the `stereogram.py` can also be placed into the
+application directory under
+`<invokeai>/.venv/lib/python3.10/site-packages/invokeai/app/invocations/`.
 
 ## Cross-view vs. parallel-view
 
