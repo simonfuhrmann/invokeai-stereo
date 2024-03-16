@@ -29,99 +29,99 @@ class WarpImage(BaseInvocation):
     h, w, c = color_img.shape
     derived_image = np.zeros_like(color_img)
     for row in range(h):
-        # generating the vertices of the morphed polyline
-        # format: new coordinate of the vertex, divergence (closeness),
-        # column of pixel that contains the point's color
-        pt = np.zeros((5 + 2 * w, 3), dtype=np.float_)
-        pt_end: int = 0
-        pt[pt_end] = [-1.0 * w, 0.0, 0.0]
-        pt_end += 1
-        for col in range(0, w):
-            coord_d = (depth_img[row][col] ** STEREO_OFFSET_EXP) * divergence_px
-            coord_x = col + 0.5 + coord_d + separation_px
-            if PIXEL_HALF_WIDTH < EPSILON:
-                pt[pt_end] = [coord_x, abs(coord_d), col]
-                pt_end += 1
+      # generating the vertices of the morphed polyline
+      # format: new coordinate of the vertex, divergence (closeness),
+      # column of pixel that contains the point's color
+      pt = np.zeros((5 + 2 * w, 3), dtype=np.float_)
+      pt_end: int = 0
+      pt[pt_end] = [-1.0 * w, 0.0, 0.0]
+      pt_end += 1
+      for col in range(0, w):
+        coord_d = (depth_img[row][col] ** STEREO_OFFSET_EXP) * divergence_px
+        coord_x = col + 0.5 + coord_d + separation_px
+        if PIXEL_HALF_WIDTH < EPSILON:
+          pt[pt_end] = [coord_x, abs(coord_d), col]
+          pt_end += 1
+        else:
+          pt[pt_end] = [coord_x - PIXEL_HALF_WIDTH, abs(coord_d), col]
+          pt[pt_end + 1] = [coord_x + PIXEL_HALF_WIDTH, abs(coord_d), col]
+          pt_end += 2
+      pt[pt_end] = [2.0 * w, 0.0, w - 1]
+      pt_end += 1
+
+      # Generating the segments of the morphed polyline
+      # Format: coord_x, coord_d, color_i of the first point, then the same for the second point
+      sg_end: int = pt_end - 1
+      sg = np.zeros((sg_end, 6), dtype=np.float_)
+      for i in range(sg_end):
+        sg[i] += np.concatenate((pt[i], pt[i + 1]))
+      # Sort segments and points using insertion sort
+      # Has a very good performance in practice, since these are almost sorted to begin with
+      for i in range(1, sg_end):
+        u = i - 1
+        while pt[u][0] > pt[u + 1][0] and 0 <= u:
+          pt[u], pt[u + 1] = np.copy(pt[u + 1]), np.copy(pt[u])
+          sg[u], sg[u + 1] = np.copy(sg[u + 1]), np.copy(sg[u])
+          u -= 1
+
+      # Rasterizing
+      # At each point in time we keep track of segments that are "active" (or "current")
+      csg = np.zeros((5 * int(abs(divergence_px)) + 25, 6), dtype=np.float_)
+      csg_end: int = 0
+      sg_pointer: int = 0
+      # and index of the point that should be processed next
+      pt_i: int = 0
+      for col in range(w):  # iterate over regions (that will be rasterized into pixels)
+        color = np.full(c, 0.5, dtype=np.float_)  # we start with 0.5 because of how floats are converted to ints
+        while pt[pt_i][0] < col:
+          pt_i += 1
+        pt_i -= 1  # pt_i now points to the dot before the region start
+        # Finding segment' parts that contribute color to the region
+        while pt[pt_i][0] < col + 1:
+          coord_from = max(col, pt[pt_i][0]) + EPSILON
+          coord_to = min(col + 1, pt[pt_i + 1][0]) - EPSILON
+          significance = coord_to - coord_from
+          # the color at center point is the same as the average of color of segment part
+          coord_center = coord_from + 0.5 * significance
+
+          # adding segments that now may contribute
+          while sg_pointer < sg_end and sg[sg_pointer][0] < coord_center:
+            csg[csg_end] = sg[sg_pointer]
+            sg_pointer += 1
+            csg_end += 1
+          # removing segments that will no longer contribute
+          csg_i = 0
+          while csg_i < csg_end:
+            if csg[csg_i][3] < coord_center:
+              csg[csg_i] = csg[csg_end - 1]
+              csg_end -= 1
             else:
-                pt[pt_end] = [coord_x - PIXEL_HALF_WIDTH, abs(coord_d), col]
-                pt[pt_end + 1] = [coord_x + PIXEL_HALF_WIDTH, abs(coord_d), col]
-                pt_end += 2
-        pt[pt_end] = [2.0 * w, 0.0, w - 1]
-        pt_end += 1
-
-        # Generating the segments of the morphed polyline
-        # Format: coord_x, coord_d, color_i of the first point, then the same for the second point
-        sg_end: int = pt_end - 1
-        sg = np.zeros((sg_end, 6), dtype=np.float_)
-        for i in range(sg_end):
-            sg[i] += np.concatenate((pt[i], pt[i + 1]))
-        # Sort segments and points using insertion sort
-        # Has a very good performance in practice, since these are almost sorted to begin with
-        for i in range(1, sg_end):
-            u = i - 1
-            while pt[u][0] > pt[u + 1][0] and 0 <= u:
-                pt[u], pt[u + 1] = np.copy(pt[u + 1]), np.copy(pt[u])
-                sg[u], sg[u + 1] = np.copy(sg[u + 1]), np.copy(sg[u])
-                u -= 1
-
-        # Rasterizing
-        # At each point in time we keep track of segments that are "active" (or "current")
-        csg = np.zeros((5 * int(abs(divergence_px)) + 25, 6), dtype=np.float_)
-        csg_end: int = 0
-        sg_pointer: int = 0
-        # and index of the point that should be processed next
-        pt_i: int = 0
-        for col in range(w):  # iterate over regions (that will be rasterized into pixels)
-            color = np.full(c, 0.5, dtype=np.float_)  # we start with 0.5 because of how floats are converted to ints
-            while pt[pt_i][0] < col:
-                pt_i += 1
-            pt_i -= 1  # pt_i now points to the dot before the region start
-            # Finding segment' parts that contribute color to the region
-            while pt[pt_i][0] < col + 1:
-                coord_from = max(col, pt[pt_i][0]) + EPSILON
-                coord_to = min(col + 1, pt[pt_i + 1][0]) - EPSILON
-                significance = coord_to - coord_from
-                # the color at center point is the same as the average of color of segment part
-                coord_center = coord_from + 0.5 * significance
-
-                # adding segments that now may contribute
-                while sg_pointer < sg_end and sg[sg_pointer][0] < coord_center:
-                    csg[csg_end] = sg[sg_pointer]
-                    sg_pointer += 1
-                    csg_end += 1
-                # removing segments that will no longer contribute
-                csg_i = 0
-                while csg_i < csg_end:
-                    if csg[csg_i][3] < coord_center:
-                        csg[csg_i] = csg[csg_end - 1]
-                        csg_end -= 1
-                    else:
-                        csg_i += 1
-                # finding the closest segment (segment with most divergence)
-                # note that this segment will be the closest from coord_from right up to coord_to, since there
-                # no new segments "appearing" inbetween these two and _the polyline does not self-intersect_
-                best_csg_i: int = 0
-                if csg_end != 1:
-                    best_csg_closeness: float = -EPSILON
-                    for csg_i in range(csg_end):
-                        ip_k = (coord_center - csg[csg_i][0]) / (csg[csg_i][3] - csg[csg_i][0])
-                        # assert 0.0 <= ip_k <= 1.0
-                        closeness = (1.0 - ip_k) * csg[csg_i][1] + ip_k * csg[csg_i][4]
-                        if best_csg_closeness < closeness and 0.0 < ip_k < 1.0:
-                            best_csg_closeness = closeness
-                            best_csg_i = csg_i
-                # getting the color
-                col_l: int = int(csg[best_csg_i][2] + EPSILON)
-                col_r: int = int(csg[best_csg_i][5] + EPSILON)
-                if col_l == col_r:
-                    color += color_img[row][col_l] * significance
-                else:
-                    ip_k = (coord_center - csg[best_csg_i][0]) / (csg[best_csg_i][3] - csg[best_csg_i][0])
-                    color += (color_img[row][col_l] * (1.0 - ip_k) +
-                              color_img[row][col_r] * ip_k
-                              ) * significance
-                pt_i += 1
-            derived_image[row][col] = np.asarray(color, dtype=np.uint8)
+              csg_i += 1
+          # finding the closest segment (segment with most divergence)
+          # note that this segment will be the closest from coord_from right up to coord_to, since there
+          # no new segments "appearing" inbetween these two and _the polyline does not self-intersect_
+          best_csg_i: int = 0
+          if csg_end != 1:
+            best_csg_closeness: float = -EPSILON
+            for csg_i in range(csg_end):
+              ip_k = (coord_center - csg[csg_i][0]) / (csg[csg_i][3] - csg[csg_i][0])
+              # assert 0.0 <= ip_k <= 1.0
+              closeness = (1.0 - ip_k) * csg[csg_i][1] + ip_k * csg[csg_i][4]
+              if best_csg_closeness < closeness and 0.0 < ip_k < 1.0:
+                best_csg_closeness = closeness
+                best_csg_i = csg_i
+          # getting the color
+          col_l: int = int(csg[best_csg_i][2] + EPSILON)
+          col_r: int = int(csg[best_csg_i][5] + EPSILON)
+          if col_l == col_r:
+            color += color_img[row][col_l] * significance
+          else:
+            ip_k = (coord_center - csg[best_csg_i][0]) / (csg[best_csg_i][3] - csg[best_csg_i][0])
+            color += (color_img[row][col_l] * (1.0 - ip_k) +
+                      color_img[row][col_r] * ip_k
+                      ) * significance
+          pt_i += 1
+        derived_image[row][col] = np.asarray(color, dtype=np.uint8)
     return derived_image
 
 
