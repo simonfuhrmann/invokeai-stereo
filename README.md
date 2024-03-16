@@ -30,16 +30,6 @@ Alternatively (NOT recommended), the `stereogram.py` can also be placed into the
 application directory under
 `<invokeai>/.venv/lib/python3.10/site-packages/invokeai/app/invocations/`.
 
-## Cross-view vs. parallel-view
-
-* Cross-view stereograms are viewed by crossing your eyes such that the left
-  image pane becomes the right-eye image, and the right image pane becomes the
-  left eye image.
-* Parallel-view stereograms are viewed by diverging your eyes such that left
-  and right images are viewed by the left and right eye, respectively. Note, for
-  larger disparities (e.g., on a computer screen), cross-view images are much
-  easier to view.
-
 ## Custom nodes
 
 The file `stereogram.py` contains three nodes for InvokeAI's workflow system. An
@@ -72,6 +62,16 @@ In particular, these nodes are provided:
 * **Make Stereo Pair**: Horizontally stacks a left and right input image into
   a stereogram. Optionally, a border is drawn around the left and right image
   with a configurable color.
+
+## Cross-view vs. parallel-view
+
+* Cross-view stereograms are viewed by crossing your eyes such that the left
+  image pane becomes the right-eye image, and the right image pane becomes the
+  left eye image.
+* Parallel-view stereograms are viewed by diverging your eyes such that left
+  and right images are viewed by the left and right eye, respectively. Note, for
+  larger disparities (e.g., on a computer screen), cross-view images are much
+  easier to view.
 
 ## Technical details
 
