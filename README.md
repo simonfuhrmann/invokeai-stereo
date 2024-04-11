@@ -1,5 +1,9 @@
 # Stereogram Custom Nodes for InvokeAI
 
+> [!NOTE]
+> The `main` branch is for InvokeAI 4.x. Please use the `invoke3` branch if
+> you're on an older version of InvokeAI.
+
 This repository contains custom nodes for InvokeAI to create cross-view or
 parallel-view stereograms. Stereograms are 2D images that, when viewed properly,
 reveal a 3D scene. Check out
