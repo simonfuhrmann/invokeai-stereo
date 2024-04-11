@@ -2,9 +2,15 @@
 # Some code from taken from the Automatic1111 plugin:
 # https://github.com/thygate/stable-diffusion-webui-depthmap-script
 
-from invokeai.app.invocations.baseinvocation import BaseInvocation, InputField, InvocationContext, invocation
-from invokeai.app.invocations.primitives import ColorField, ImageField, ImageOutput
-from invokeai.app.services.image_records.image_records_common import ImageCategory, ResourceOrigin
+from invokeai.invocation_api import (
+    BaseInvocation,
+    ColorField,
+    ImageField,
+    ImageOutput,
+    InputField,
+    InvocationContext,
+    invocation,
+)
 
 from scipy import ndimage
 from PIL import Image
@@ -168,23 +174,11 @@ class WarpImage(BaseInvocation):
 
 
   def invoke(self, context: InvocationContext) -> ImageOutput:
-    img = context.services.images.get_pil_image(self.image.image_name)
-    depthmap = context.services.images.get_pil_image(self.depthmap.image_name)
+    img = context.images.get_pil(self.image.image_name)
+    depthmap = context.images.get_pil(self.depthmap.image_name)
     warped = self.warp_image(img, depthmap, self.divergence, self.separation)
-    warped_dto = context.services.images.create(
-      image = warped,
-      image_origin = ResourceOrigin.INTERNAL,
-      image_category = ImageCategory.CONTROL,
-      session_id = context.graph_execution_state_id,
-      node_id = self.id,
-      is_intermediate = self.is_intermediate,
-      workflow = context.workflow,
-    )
-    return ImageOutput(
-      image = ImageField(image_name=warped_dto.image_name),
-      width = warped_dto.width,
-      height = warped_dto.height,
-    )
+    warped_dto = context.images.save(image = warped)
+    return ImageOutput.build(warped_dto)
 
 
 @invocation("makestereopair", title="Make Stereo Pair", tags=["image", "infill", "depth", "3d"], category="inpaint", version="1.0.0")
@@ -215,25 +209,13 @@ class MakeStereoPair(BaseInvocation):
 
 
   def invoke(self, context: InvocationContext) -> ImageOutput:
-    left = context.services.images.get_pil_image(self.left.image_name)
-    right = context.services.images.get_pil_image(self.right.image_name)
+    left = context.images.get_pil(self.left.image_name)
+    right = context.images.get_pil(self.right.image_name)
     borderPx = max(0, self.borderPx)
     pair = self.makePair(left, right, borderPx, self.borderColor)
 
-    pair_dto = context.services.images.create(
-      image = pair,
-      image_origin = ResourceOrigin.INTERNAL,
-      image_category = ImageCategory.CONTROL,
-      session_id = context.graph_execution_state_id,
-      node_id = self.id,
-      is_intermediate = self.is_intermediate,
-      workflow = context.workflow,
-    )
-    return ImageOutput(
-      image = ImageField(image_name=pair_dto.image_name),
-      width = pair_dto.width,
-      height = pair_dto.height,
-    )
+    pair_dto = context.images.save(image = pair)
+    return ImageOutput.build(pair_dto)
 
 
 @invocation("dilatedepth", title="Dilate Depth Map", tags=["image", "infill", "depth", "3d"], category="inpaint", version="1.0.0")
@@ -252,20 +234,8 @@ class DilateDepth(BaseInvocation):
 
 
   def invoke(self, context: InvocationContext) -> ImageOutput:
-    depthmap = context.services.images.get_pil_image(self.depthmap.image_name)
+    depthmap = context.images.get_pil(self.depthmap.image_name)
     dilated = self.dilateDepth(depthmap)
 
-    image_dto = context.services.images.create(
-      image = dilated,
-      image_origin = ResourceOrigin.INTERNAL,
-      image_category = ImageCategory.CONTROL,
-      session_id = context.graph_execution_state_id,
-      node_id = self.id,
-      is_intermediate = self.is_intermediate,
-      workflow = context.workflow,
-    )
-    return ImageOutput(
-      image = ImageField(image_name=image_dto.image_name),
-      width = image_dto.width,
-      height = image_dto.height,
-    )
+    image_dto = context.images.save(image = dilated)
+    return ImageOutput.build(image_dto)

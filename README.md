@@ -10,7 +10,7 @@ workflow, drag and drop it into your InvokeAI (copy and Ctrl-V seems to drop
 metdata, including the workflow). Then right-click the image and select "Load
 Workflow".
 
-![Example stereo image](docs/example_stereo_01.png)
+![Example stereo image](docs/example_stereo_02.png)
 
 ## Installation
 
@@ -41,7 +41,7 @@ example cross-view workflow for the nodes is here. To turn this into a
 parallel-view image, simply swap the left/right images on the "Make Stereo
 Pair" node.
 
-![Example workflow screenshot](docs/example_workflow_01.png)
+![Example workflow screenshot](docs/example_workflow_02.png)
 
 In particular, these nodes are provided:
 
