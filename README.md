@@ -7,16 +7,16 @@ reveal a 3D scene. Check out
 
 Following is an example stereo image with an embedded workflow. To load the
 workflow, drag and drop it into your InvokeAI (copy and Ctrl-V seems to drop
-metdata, including the workflow). Then right-click the image and select "Load
-Workflow".
+metdata, including the workflow). Then, in InvokeAI, right-click the image and
+select "Load Workflow".
 
-![Example stereo image](docs/example_stereo_02.png)
+![Example stereo image](docs/example_stereo_03.png)
 
 ## Installation
 
 > [!NOTE]
-> The `main` branch is for InvokeAI 4.x. Please use the `invoke3` branch if
-> you're on an older version of InvokeAI.
+> The `main` branch is for InvokeAI 5.x and 4.x. Please use the `invoke3`
+> branch if you're on an older version of InvokeAI.
 
 Clone this repository into your `<invokeai>/nodes/` directory. Then restart
 InvokeAI. This will make new nodes available in the workflow editor (see below
@@ -41,7 +41,12 @@ example cross-view workflow for the nodes is here. To turn this into a
 parallel-view image, simply swap the left/right images on the "Make Stereo
 Pair" node.
 
-![Example workflow screenshot](docs/example_workflow_02.png)
+![Example workflow screenshot](docs/example_workflow_03.png)
+
+> [!NOTE]
+> If you get depth artifacts around the silhouettes of foreground objects, it
+> is likely related to the depth processor.
+> See [GitHub bug](https://github.com/invoke-ai/InvokeAI/issues/7358).
 
 In particular, these nodes are provided:
 
